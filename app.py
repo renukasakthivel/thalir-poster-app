@@ -1,5 +1,5 @@
 import streamlit as st
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
+from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageFilter
 import io
 
 try:
@@ -10,36 +10,36 @@ except:
 
 st.title("🛍️ Thalir Saree Poster Generator")
 
-# INPUTS
+# Saree Names
+saree_list = ["Mul Mul Cotton", "Silk Saree", "Linen Saree", "Banarasi"]
+selected_saree = st.selectbox("Select Saree Name", saree_list)
+custom_saree = st.text_input("Or Enter Custom Saree Name")
+saree_type = custom_saree if custom_saree else selected_saree
+
+# Features
+feature_list = ["Soft & Breathable", "Lightweight", "Premium Quality", "Easy Wash"]
+
+def feature_input(label):
+    choice = st.selectbox(label, ["Select"] + feature_list)
+    custom = st.text_input(f"Custom {label}")
+    return custom if custom else (choice if choice != "Select" else "")
+
+feature1 = "✓ " + feature_input("Feature 1")
+feature2 = "✓ " + feature_input("Feature 2")
+feature3 = "✓ " + feature_input("Feature 3")
+
 price = st.text_input("Price", "680")
 phone = st.text_input("Phone", "+91 9342665700")
 
-saree_type = st.text_input("Saree Name", "Mul Mul cotton sarees")
-
-feature1 = "✓ " + st.text_input("Feature 1", "Soft & Breathable")
-feature2 = "✓ " + st.text_input("Feature 2", "Lightweight")
-feature3 = "✓ " + st.text_input("Feature 3", "Easy Wash")
-
 uploaded_files = st.file_uploader("Upload Sarees", accept_multiple_files=True)
 
-# ✅ SAFE FONT FUNCTION (NO ERROR)
-def get_font(size):
+# FONT
+def font(size):
     try:
-        return ImageFont.truetype("DejaVuSans-Bold.ttf", size)
+        return ImageFont.truetype("assets/DejaVuSans-Bold.ttf", size)
     except:
         return ImageFont.load_default()
 
-# AUTO TEXT FIT
-def fit_text(draw, text, max_width, start_size=50):
-    size = start_size
-    while size > 15:
-        font = get_font(size)
-        if draw.textlength(text, font=font) <= max_width:
-            return font
-        size -= 2
-    return get_font(20)
-
-# CENTER TEXT
 def draw_center(draw, x, y, text, font, color):
     w = draw.textlength(text, font=font)
     draw.text((x - w//2, y), text, fill=color, font=font)
@@ -51,89 +51,72 @@ if st.button("Generate Posters"):
         poster = Image.open("assets/template.png").convert("RGBA").resize((1080,1350))
         draw = ImageDraw.Draw(poster)
 
-        font_small = get_font(26)
-
         # IMAGE
         img = Image.open(file).convert("RGBA")
         saree = remove(img) if REMBG else img
-        saree = ImageEnhance.Brightness(saree).enhance(1.2)
+
+        # ✅ NATURAL LOOK (NO COLOR CHANGE)
+        saree = ImageEnhance.Brightness(saree).enhance(1.08)
+        saree = ImageEnhance.Contrast(saree).enhance(1.05)
+        saree = ImageEnhance.Sharpness(saree).enhance(1.1)
+
         saree = saree.resize((520,750))
 
         x = (1080-520)//2
         y = 240
 
-        shadow = saree.copy().filter(ImageFilter.GaussianBlur(10))
-        poster.paste(shadow, (x+20,y+30), shadow)
+        # ✅ SOFT GLOW (NO SHADOW)
+        glow = saree.copy().filter(ImageFilter.GaussianBlur(8))
+        poster.paste(glow, (x, y), glow)
+
         poster.paste(saree, (x,y), saree)
 
-        # LOGO
-        try:
-            logo = Image.open("assets/logo.png").convert("RGBA").resize((130,130))
-            poster.paste(logo, (x+300, y+480), logo)
-        except:
-            pass
-
         # PRICE BOX
-        box = (820, 400, 1030, 520)
-        draw.rounded_rectangle(box, radius=50, fill="#b30000")
+        box = (820, 400, 1040, 560)
+        draw.rounded_rectangle(box, radius=60, fill="#b30000")
 
         cx = (box[0]+box[2])//2
         cy = (box[1]+box[3])//2
 
-        draw_center(draw, cx, 420, "PRICE", font_small, "#ffffff")
+        draw_center(draw, cx, 420, "PRICE", font(32), "#ffffff")
 
         price_text = f"₹{price}"
-        font_big = fit_text(draw, price_text, 220, 65)
-
-        draw_center(draw, cx+2, cy-8, price_text, font_big, "#000000")
-        draw_center(draw, cx, cy-10, price_text, font_big, "#ffffff")
+        draw_center(draw, cx+2, cy-5, price_text, font(70), "#000")
+        draw_center(draw, cx, cy-8, price_text, font(70), "#ffffff")
 
         # NAME
-        name_y = y + 750 + 110
-        font_name = fit_text(draw, saree_type, 800, 52)
-        draw_center(draw, 540, name_y, saree_type, font_name, "#2f4f2f")
-
-        fy = name_y + 110
+        name_y = y + 750 + 100
+        draw_center(draw, 540, name_y, saree_type, font(55), "#1a2e1a")
 
         # FEATURES
-        center_x = 540
-        gap = 280
+        fy = name_y + 120
+        gap = 300
 
-        x1 = center_x - gap
-        x2 = center_x
-        x3 = center_x + gap
+        def clean(text):
+            return text[:22]
 
-        f1 = fit_text(draw, feature1, 250, 28)
-        f2 = fit_text(draw, feature2, 250, 28)
-        f3 = fit_text(draw, feature3, 250, 28)
+        f1 = clean(feature1)
+        f2 = clean(feature2)
+        f3 = clean(feature3)
 
-        draw_center(draw, x1, fy, feature1, f1, "#2f4f2f")
-        draw_center(draw, x2, fy, feature2, f2, "#2f4f2f")
-        draw_center(draw, x3, fy, feature3, f3, "#2f4f2f")
+        draw_center(draw, 540-gap, fy, f1, font(26), "#1a2e1a")
+        draw_center(draw, 540, fy, f2, font(26), "#1a2e1a")
+        draw_center(draw, 540+gap, fy, f3, font(26), "#1a2e1a")
 
-        # GOLD LINES
-        m1 = (x1 + x2) // 2
-        m2 = (x2 + x3) // 2
-
-        draw.line((m1, fy-10, m1, fy+30), fill="#caa84a", width=2)
-        draw.line((m2, fy-10, m2, fy+30), fill="#caa84a", width=2)
-        draw.line((x1-60, fy+60, x3+60, fy+60), fill="#caa84a", width=2)
+        # DIVIDER LINES
+        draw.line((540-gap//2, fy-10, 540-gap//2, fy+30), fill="#caa84a", width=2)
+        draw.line((540+gap//2, fy-10, 540+gap//2, fy+30), fill="#caa84a", width=2)
 
         # ORDER BOX
-        order_y = fy + 65
+        order_y = fy + 70
+        draw.rounded_rectangle((180, order_y, 900, order_y+70),
+                               radius=40, fill="#fffdf5",
+                               outline="#caa84a", width=2)
 
-        draw.rounded_rectangle(
-            (180, order_y, 900, order_y+70),
-            radius=40,
-            fill="#fffdf5",
-            outline="#caa84a",
-            width=2
-        )
-
-        order_text = f"📞 To Order: {phone}"
-        font_order = fit_text(draw, order_text, 650, 30)
-
-        draw_center(draw, 540, order_y+20, order_text, font_order, "#2f4f2f")
+        draw_center(draw, 540, order_y+25,
+                    f"📞 To Order: {phone}",
+                    font(34),
+                    "#1a2e1a")
 
         # SHOW
         st.image(poster, caption=f"Poster {idx+1}")
