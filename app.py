@@ -10,13 +10,12 @@ except:
 
 st.title("🛍️ Thalir Saree Poster Generator")
 
-# Saree Names
+# INPUTS
 saree_list = ["Mul Mul Cotton", "Silk Saree", "Linen Saree", "Banarasi"]
 selected_saree = st.selectbox("Select Saree Name", saree_list)
 custom_saree = st.text_input("Or Enter Custom Saree Name")
 saree_type = custom_saree if custom_saree else selected_saree
 
-# Features
 feature_list = ["Soft & Breathable", "Lightweight", "Premium Quality", "Easy Wash"]
 
 def feature_input(label):
@@ -40,9 +39,9 @@ def font(size):
     except:
         return ImageFont.load_default()
 
-def draw_center(draw, x, y, text, font, color):
-    w = draw.textlength(text, font=font)
-    draw.text((x - w//2, y), text, fill=color, font=font)
+def draw_center(draw, x, y, text, f, color):
+    w = draw.textlength(text, font=f)
+    draw.text((x - w//2, y), text, fill=color, font=f)
 
 if st.button("Generate Posters"):
 
@@ -55,21 +54,25 @@ if st.button("Generate Posters"):
         img = Image.open(file).convert("RGBA")
         saree = remove(img) if REMBG else img
 
-        # ✅ NATURAL LOOK (NO COLOR CHANGE)
-        saree = ImageEnhance.Brightness(saree).enhance(1.08)
-        saree = ImageEnhance.Contrast(saree).enhance(1.05)
-        saree = ImageEnhance.Sharpness(saree).enhance(1.1)
+        # ✅ NATURAL LOOK (NO COLOR DAMAGE)
+        saree = ImageEnhance.Brightness(saree).enhance(1.05)
+        saree = ImageEnhance.Contrast(saree).enhance(1.03)
+        saree = ImageEnhance.Sharpness(saree).enhance(1.08)
 
         saree = saree.resize((520,750))
 
         x = (1080-520)//2
         y = 240
 
-        # ✅ SOFT GLOW (NO SHADOW)
-        glow = saree.copy().filter(ImageFilter.GaussianBlur(8))
-        poster.paste(glow, (x, y), glow)
-
+        # ❌ NO HEAVY SHADOW (clean look)
         poster.paste(saree, (x,y), saree)
+
+        # ✅ LOGO (FIXED)
+        try:
+            logo = Image.open("assets/logo.png").convert("RGBA").resize((140,140))
+            poster.paste(logo, (x+280, y+470), logo)
+        except:
+            pass
 
         # PRICE BOX
         box = (820, 400, 1040, 560)
@@ -78,44 +81,51 @@ if st.button("Generate Posters"):
         cx = (box[0]+box[2])//2
         cy = (box[1]+box[3])//2
 
-        draw_center(draw, cx, 420, "PRICE", font(32), "#ffffff")
+        draw_center(draw, cx, 420, "PRICE", font(30), "#ffffff")
 
         price_text = f"₹{price}"
-        draw_center(draw, cx+2, cy-5, price_text, font(70), "#000")
-        draw_center(draw, cx, cy-8, price_text, font(70), "#ffffff")
+        draw_center(draw, cx+2, cy-5, price_text, font(65), "#000")
+        draw_center(draw, cx, cy-8, price_text, font(65), "#ffffff")
 
         # NAME
-        name_y = y + 750 + 100
-        draw_center(draw, 540, name_y, saree_type, font(55), "#1a2e1a")
+        name_y = y + 850
+        draw_center(draw, 540, name_y, saree_type, font(52), "#1a2e1a")
 
-        # FEATURES
-        fy = name_y + 120
+        # FEATURES (EVEN SPACING)
+        fy = name_y + 110
         gap = 300
 
-        def clean(text):
-            return text[:22]
+        def clean(text): return text[:22]
 
         f1 = clean(feature1)
         f2 = clean(feature2)
         f3 = clean(feature3)
 
-        draw_center(draw, 540-gap, fy, f1, font(26), "#1a2e1a")
-        draw_center(draw, 540, fy, f2, font(26), "#1a2e1a")
-        draw_center(draw, 540+gap, fy, f3, font(26), "#1a2e1a")
+        draw_center(draw, 540-gap, fy, f1, font(24), "#1a2e1a")
+        draw_center(draw, 540, fy, f2, font(24), "#1a2e1a")
+        draw_center(draw, 540+gap, fy, f3, font(24), "#1a2e1a")
 
-        # DIVIDER LINES
-        draw.line((540-gap//2, fy-10, 540-gap//2, fy+30), fill="#caa84a", width=2)
-        draw.line((540+gap//2, fy-10, 540+gap//2, fy+30), fill="#caa84a", width=2)
+        draw.line((540-gap//2, fy-10, 540-gap//2, fy+25), fill="#caa84a", width=2)
+        draw.line((540+gap//2, fy-10, 540+gap//2, fy+25), fill="#caa84a", width=2)
 
-        # ORDER BOX
-        order_y = fy + 70
-        draw.rounded_rectangle((180, order_y, 900, order_y+70),
-                               radius=40, fill="#fffdf5",
-                               outline="#caa84a", width=2)
+        # ORDER BOX (FINAL PERFECT POSITION)
+        order_y = fy + 60
 
-        draw_center(draw, 540, order_y+25,
+        box_top = order_y
+        box_bottom = order_y + 70
+
+        draw.rounded_rectangle((180, box_top, 900, box_bottom),
+                               radius=40,
+                               fill="#fffdf5",
+                               outline="#caa84a",
+                               width=2)
+
+        # ✅ PERFECT CENTER + SLIGHT UP
+        center_y = (box_top + box_bottom) // 2 - 8
+
+        draw_center(draw, 540, center_y,
                     f"📞 To Order: {phone}",
-                    font(34),
+                    font(32),
                     "#1a2e1a")
 
         # SHOW
